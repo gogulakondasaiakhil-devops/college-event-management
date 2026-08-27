@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Admin Dashboard - College Event Portal</title>
+    <!-- Google Font Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- CSS Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body style="background: var(--bg);">
+
+    <!-- ADMIN HEADER -->
+    <header class="site-header">
+        <nav class="navbar">
+            <a href="{{ url_for('index') }}" class="logo">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <span>CampusEvents <small style="font-size: 0.8rem; opacity: 0.7; font-weight: 500;">Advanced Management Panel</small></span>
+            </a>
+            
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <a href="{{ url_for('dashboard') }}" class="btn-secondary" style="padding: 8px 18px; font-size: 0.88rem; color: var(--text-dark); border-color: var(--border-color);">
+                    <i class="fa-solid fa-eye"></i> View Site
+                </a>
+                <a href="{{ url_for('logout') }}" class="logout-btn">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- ADMIN CONTAINER -->
+    <main class="container">
+        <div class="admin-wrapper">
+
+            <div class="top-bar">
+                <h1><i class="fa-solid fa-gauge-high"></i> Advanced Dashboard Overview</h1>
+                
+                <!-- EXPORT BUTTONS -->
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <a href="{{ url_for('export_excel', search=search, event_id=selected_event_id, payment_status=selected_payment_status, event_date=selected_event_date, sort_by=selected_sort_by, sort_order=selected_sort_order) }}" class="btn-primary" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); font-size: 0.9rem; padding: 10px 20px;">
+                        <i class="fa-solid fa-file-excel"></i> Export to Excel
+                    </a>
+                    <a href="{{ url_for('export_pdf', search=search, event_id=selected_event_id, payment_status=selected_payment_status, event_date=selected_event_date, sort_by=selected_sort_by, sort_order=selected_sort_order) }}" class="btn-primary" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); font-size: 0.9rem; padding: 10px 20px;">
+                        <i class="fa-solid fa-file-pdf"></i> Export to PDF
+                    </a>
+                </div>
+            </div>
+
+            <!-- 8 STATS CARDS GRID -->
+            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                <div class="stat-card animate-fade-in">
+                    <div class="stat-icon">
+                        <i class="fa-solid fa-calendar-days"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Total Events</h3>
+                        <h2>{{ total_events }}</h2>
+                    </div>
+                </div>
+
+                <div class="stat-card animate-fade-in">
+                    <div class="stat-icon" style="background: rgba(37, 99, 235, 0.1); color: var(--primary);">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Total Registrations</h3>
+                        <h2>{{ total_registrations }}</h2>
+                    </div>
+                </div>
+
+                <div class="stat-card animate-fade-in">
+                    <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Today's Events</h3>
+                        <h2>{{ todays_events }}</h2>
+                    </div>
+                </div>
+
+                <div class="stat-card animate-fade-in">
+                    <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Paid Registrations</h3>
+                        <h2>{{ paid_registrations }}</h2>
+                    </div>
+                </div>
+
+                <div class="stat-card animate-fade-in">
+                    <div class="stat-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Pending Registrations</h3>
+                        <h2>{{ pending_registrations }}</h2>
+                    </div>
+                </div>
+
+                <div class="stat-card animate-fade-in">
+                    <div class="stat-icon" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;">
+                        <i class="fa-solid fa-indian-rupee-sign"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Total Revenue</h3>
+                        <h2>₹ {{ total_revenue }}</h2>
+                    </div>
+                </div>
+
+                <div class="stat-card animate-fade-in">
+                    <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Collected Revenue</h3>
+                        <h2>₹ {{ collected_revenue }}</h2>
+                    </div>
+                </div>
+
+                <div class="stat-card animate-fade-in">
+                    <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Pending Revenue</h3>
+                        <h2>₹ {{ pending_revenue }}</h2>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DYNAMIC CHARTS SECTION -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 24px; margin-bottom: 40px;">
+                <div class="admin-card" style="margin-bottom: 0;">
+                    <h2><i class="fa-solid fa-chart-column"></i> Participants per Event</h2>
+                    <div style="height: 260px; position: relative;">
+                        <canvas id="eventsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="admin-card" style="margin-bottom: 0;">
+                    <h2><i class="fa-solid fa-chart-pie"></i> Payment Status Distribution</h2>
+                    <div style="height: 260px; position: relative; display: flex; justify-content: center;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADD EVENT FORM CARD -->
+            <div class="admin-card animate-fade-in">
+                <h2><i class="fa-solid fa-plus-circle"></i> Add New Event</h2>
+
+                <form action="{{ url_for('add_event') }}" method="POST" enctype="multipart/form-data">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
+                        <div class="form-field">
+                            <label>Event Name</label>
+                            <input type="text" name="event_name" placeholder="e.g. Annual Tech Fest" required>
+                        </div>
+
+                        <div class="form-field">
+                            <label>Event Date</label>
+                            <input type="date" name="event_date" required>
+                        </div>
+
+                        <div class="form-field">
+                            <label>Venue</label>
+                            <input type="text" name="venue" placeholder="e.g. Main Auditorium" required>
+                        </div>
+
+                        <div class="form-field">
+                            <label>Registration Fee (₹)</label>
+                            <input type="number" name="fee" placeholder="e.g. 150" required>
+                        </div>
+                    </div>
+
+                    <div class="form-field">
+                        <label>Description</label>
+                        <textarea name="description" rows="3" placeholder="Enter event description and instructions..."></textarea>
+                    </div>
+
+                    <div class="form-field">
+                        <label>Event Image Banner (JPG, JPEG, PNG)</label>
+                        <input type="file" name="event_image" accept="image/jpeg,image/png">
+                    </div>
+
+                    <button type="submit" class="btn-primary">
+                        <i class="fa-solid fa-plus"></i> Add Event
+                    </button>
+                </form>
+            </div>
+
+            <!-- EVENTS MANAGEMENT TABLE -->
+            <div class="admin-card animate-fade-in">
+                <h2><i class="fa-solid fa-list-check"></i> Event Inventory & Participant Counts</h2>
+
+                <div class="admin-table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Event Name</th>
+                                <th>Date</th>
+                                <th>Venue</th>
+                                <th>Fee</th>
+                                <th>Participants</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for event in events %}
+                            <tr>
+                                <td><strong>#{{ event.event_id }}</strong></td>
+                                <td>{{ event.event_name }}</td>
+                                <td>{{ event.event_date }}</td>
+                                <td>{{ event.venue }}</td>
+                                <td>₹ {{ event.fee }}</td>
+                                <td><span style="font-weight: 700; color: var(--primary);"><i class="fa-solid fa-user-group"></i> {{ event.participants }}</span></td>
+                                <td>
+                                    <a class="btn-card" href="{{ url_for('edit_event', event_id=event.event_id) }}" style="padding: 6px 14px; margin-right: 6px;">
+                                        <i class="fa-solid fa-pen"></i> Edit
+                                    </a>
+                                    <a class="delete-btn" href="{{ url_for('delete_event', event_id=event.event_id) }}" onclick="return confirm('Deleting this event will remove it from the system. Proceed?')" style="color: #ef4444; font-weight: 600;">
+                                        <i class="fa-solid fa-trash"></i> Delete
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No events created yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ADVANCED SEARCH & MULTI-FILTER SECTION -->
+            <div class="admin-card animate-fade-in">
+                <h2><i class="fa-solid fa-filter"></i> Advanced Search & Multi-Filters</h2>
+
+                <form method="GET" action="{{ url_for('admin') }}" id="filterForm">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+                        <div class="form-field" style="margin-bottom: 0;">
+                            <label>Search Query</label>
+                            <input type="text" name="search" placeholder="Hall ticket, name, mobile, email..." value="{{ search }}">
+                        </div>
+
+                        <div class="form-field" style="margin-bottom: 0;">
+                            <label>Event Filter</label>
+                            <select name="event_id" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                                <option value="">All Events</option>
+                                {% for e in events %}
+                                    <option value="{{ e.event_id }}" {% if selected_event_id|string == e.event_id|string %}selected{% endif %}>{{ e.event_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-field" style="margin-bottom: 0;">
+                            <label>Payment Status</label>
+                            <select name="payment_status" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                                <option value="">All Statuses</option>
+                                <option value="Pending" {% if selected_payment_status == 'Pending' %}selected{% endif %}>Pending</option>
+                                <option value="Paid" {% if selected_payment_status == 'Paid' %}selected{% endif %}>Paid</option>
+                                <option value="Rejected" {% if selected_payment_status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                            </select>
+                        </div>
+
+                        <div class="form-field" style="margin-bottom: 0;">
+                            <label>Event Date</label>
+                            <input type="date" name="event_date" value="{{ selected_event_date }}">
+                        </div>
+
+                        <div class="form-field" style="margin-bottom: 0;">
+                            <label>Sort By</label>
+                            <select name="sort_by" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                                <option value="">Default Order</option>
+                                <option value="student_name" {% if selected_sort_by == 'student_name' %}selected{% endif %}>Student Name</option>
+                                <option value="event_name" {% if selected_sort_by == 'event_name' %}selected{% endif %}>Event Name</option>
+                                <option value="event_date" {% if selected_sort_by == 'event_date' %}selected{% endif %}>Event Date</option>
+                                <option value="payment_status" {% if selected_sort_by == 'payment_status' %}selected{% endif %}>Payment Status</option>
+                            </select>
+                        </div>
+
+                        <div class="form-field" style="margin-bottom: 0;">
+                            <label>Sort Direction</label>
+                            <select name="sort_order" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                                <option value="ASC" {% if selected_sort_order == 'ASC' %}selected{% endif %}>Ascending (A-Z)</option>
+                                <option value="DESC" {% if selected_sort_order == 'DESC' %}selected{% endif %}>Descending (Z-A)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px;">
+                        <button type="submit" class="btn-primary">
+                            <i class="fa-solid fa-magnifying-glass"></i> Apply Filters
+                        </button>
+                        <a href="{{ url_for('admin') }}" class="btn-secondary" style="color: var(--text-dark); border-color: var(--border-color);">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- REGISTERED STUDENTS & BULK ACTIONS TABLE -->
+            <div class="admin-card animate-fade-in">
+                <h2><i class="fa-solid fa-users-viewfinder"></i> Student Registrations & Approvals</h2>
+
+                <!-- BULK ACTIONS FORM -->
+                <form action="{{ url_for('bulk_action') }}" method="POST" id="bulkForm">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; background: var(--surface-alt); padding: 14px 20px; border-radius: var(--radius-md);">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)" style="width: 18px; height: 18px; cursor: pointer;">
+                            <label for="selectAll" style="font-weight: 600; cursor: pointer;">Select All Registrations</label>
+                        </div>
+
+                        <div style="display: flex; gap: 12px;">
+                            <button type="submit" name="action" value="mark_paid" class="btn-card" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);">
+                                <i class="fa-solid fa-check-double"></i> Mark Selected as Paid
+                            </button>
+                            <button type="submit" name="action" value="delete" class="btn-card" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);" onclick="return confirm('Delete selected registrations? This action cannot be undone.')">
+                                <i class="fa-solid fa-trash-can"></i> Delete Selected
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="admin-table-wrapper">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;">Select</th>
+                                    <th>Hall Ticket</th>
+                                    <th>Student Name</th>
+                                    <th>Mobile</th>
+                                    <th>Email</th>
+                                    <th>Event</th>
+                                    <th>Event Date</th>
+                                    <th>Status</th>
+                                    <th>Payment Proof</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for registration in registrations %}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" name="registration_ids" value="{{ registration.registration_id }}" class="reg-checkbox" style="width: 16px; height: 16px; cursor: pointer;">
+                                    </td>
+                                    <td><strong>{{ registration.hall_ticket }}</strong></td>
+                                    <td>{{ registration.student_name }}</td>
+                                    <td>{{ registration.mobile }}</td>
+                                    <td>{{ registration.email }}</td>
+                                    <td>{{ registration.event_name }}</td>
+                                    <td>{{ registration.event_date }}</td>
+                                    <td>
+                                        {% if registration.payment_status == 'Paid' %}
+                                            <span class="paid-badge"><i class="fa-solid fa-circle-check"></i> Paid</span>
+                                        {% elif registration.payment_status == 'Rejected' %}
+                                            <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;"><i class="fa-solid fa-circle-xmark"></i> Rejected</span>
+                                        {% else %}
+                                            <span class="badge badge-status-upcoming"><i class="fa-solid fa-clock"></i> Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if registration.payment_proof %}
+                                            <img class="payment-proof-thumb" src="{{ url_for('static', filename='payments/' + registration.payment_proof) }}" alt="Payment Proof" onclick="openImageModal('{{ url_for('static', filename='payments/' + registration.payment_proof) }}')" style="cursor: pointer;">
+                                            <br>
+                                            <a href="javascript:void(0)" onclick="openImageModal('{{ url_for('static', filename='payments/' + registration.payment_proof) }}')" style="font-size: 0.8rem; color: var(--primary); font-weight: 500;">
+                                                <i class="fa-solid fa-magnifying-glass-plus"></i> View Proof
+                                            </a>
+                                        {% else %}
+                                            <span style="color: var(--text-muted);">No File</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                            {% if registration.payment_status != 'Paid' %}
+                                                <a href="{{ url_for('mark_paid', registration_id=registration.registration_id) }}" class="btn-card" style="padding: 6px 12px; background: #16a34a; font-size: 0.8rem;">
+                                                    <i class="fa-solid fa-check"></i> Approve
+                                                </a>
+                                            {% endif %}
+                                            {% if registration.payment_status != 'Rejected' %}
+                                                <a href="{{ url_for('reject_payment', registration_id=registration.registration_id) }}" class="btn-card" style="padding: 6px 12px; background: #f59e0b; font-size: 0.8rem;">
+                                                    <i class="fa-solid fa-xmark"></i> Reject
+                                                </a>
+                                            {% endif %}
+                                            <a href="{{ url_for('delete_registration', registration_id=registration.registration_id) }}" onclick="return confirm('Delete registration for {{ registration.student_name }}?')" class="delete-btn" style="padding: 6px 8px; font-size: 0.85rem;">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 24px;">No student registrations found for selected criteria.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- FULL-SIZE PAYMENT PROOF IMAGE MODAL -->
+    <div id="imageModal" class="modal-backdrop" onclick="closeImageModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <span class="modal-close" onclick="closeImageModal()">&times;</span>
+            <h3 style="margin-bottom: 16px; color: var(--primary-dark);"><i class="fa-solid fa-receipt"></i> Payment Proof Screenshot</h3>
+            <img id="modalImage" src="" alt="Full Payment Proof" style="max-width: 100%; max-height: 70vh; border-radius: var(--radius-md); object-fit: contain;">
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-col">
+                <h3><i class="fa-solid fa-graduation-cap"></i> College Events Portal</h3>
+                <p>Official centralized platform for event registrations, announcements, and student participation management.</p>
+            </div>
+            <div class="footer-col">
+                <h3>Quick Links</h3>
+                <ul class="footer-links">
+                    <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-chevron-right"></i> Home</a></li>
+                    <li><a href="{{ url_for('dashboard') }}"><i class="fa-solid fa-chevron-right"></i> All Events</a></li>
+                    <li><a href="{{ url_for('logout') }}"><i class="fa-solid fa-chevron-right"></i> Logout</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            &copy; 2026 College Event Management System. All Rights Reserved.
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        // Initialize Chart.js
+        const chartEvents = {{ chart_events | tojson }};
+        const chartParticipants = {{ chart_participants | tojson }};
+        const paidCount = {{ paid_registrations }};
+        const pendingCount = {{ pending_registrations }};
+        const rejectedCount = {{ rejected_registrations }};
+
+        // Events Bar Chart
+        const ctxEvents = document.getElementById('eventsChart').getContext('2d');
+        new Chart(ctxEvents, {
+            type: 'bar',
+            data: {
+                labels: chartEvents,
+                datasets: [{
+                    label: 'Participants',
+                    data: chartParticipants,
+                    backgroundColor: 'rgba(37, 99, 235, 0.8)',
+                    borderColor: '#2563eb',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+
+        // Status Doughnut Chart
+        const ctxStatus = document.getElementById('statusChart').getContext('2d');
+        new Chart(ctxStatus, {
+            type: 'doughnut',
+            data: {
+                labels: ['Paid', 'Pending', 'Rejected'],
+                datasets: [{
+                    data: [paidCount, pendingCount, rejectedCount],
+                    backgroundColor: ['#16a34a', '#f59e0b', '#ef4444'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        // Checkbox Select All Toggle
+        function toggleSelectAll(master) {
+            const checkboxes = document.querySelectorAll('.reg-checkbox');
+            checkboxes.forEach(cb => cb.checked = master.checked);
+        }
+
+        // Image Modal Helper
+        function openImageModal(url) {
+            document.getElementById('modalImage').src = url;
+            document.getElementById('imageModal').style.display = 'flex';
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Event Pass | CampusEvents</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <div style="
+        max-width: 650px;
+        margin: 40px auto;
+    ">
+
+        <div class="admin-card"
+             style="
+                text-align:center;
+                padding:40px;
+             ">
+
+            <h1 style="color:var(--primary);">
+                🎟️ Event Pass
+            </h1>
+
+            <p>
+                College Event Management System
+            </p>
+
+            <hr>
+
+            <h2>
+                {{ registration.event_name }}
+            </h2>
+
+            <!-- QR -->
+
+            <div style="
+                margin:30px auto;
+            ">
+
+                <img
+                    src="{{ url_for(
+                        'static',
+                        filename='qrcodes/' + registration.qr_code
+                    ) }}"
+                    alt="Event QR Code"
+                    style="
+                        width:240px;
+                        height:240px;
+                    "
+                >
+
+            </div>
+
+            <!-- PARTICIPANT CODE -->
+
+            <p>
+                <strong>Participant Code</strong>
+            </p>
+
+            <h2 style="
+                color:var(--primary);
+                letter-spacing:2px;
+            ">
+                {{ registration.participant_code }}
+            </h2>
+
+            <!-- DETAILS -->
+
+            <div style="
+                text-align:left;
+                margin-top:30px;
+                padding:20px;
+                background:var(--surface-alt);
+                border-radius:12px;
+            ">
+
+                <p>
+                    <strong>Student:</strong>
+                    {{ registration.student_name }}
+                </p>
+
+                <p>
+                    <strong>Hall Ticket:</strong>
+                    {{ registration.hall_ticket }}
+                </p>
+
+                <p>
+                    <strong>Event:</strong>
+                    {{ registration.event_name }}
+                </p>
+
+                <p>
+                    <strong>Date:</strong>
+                    {{ registration.event_date }}
+                </p>
+
+                <p>
+                    <strong>Venue:</strong>
+                    {{ registration.venue }}
+                </p>
+
+                <p>
+                    <strong>Payment:</strong>
+
+                    <span style="color:green;">
+                        ✓ Paid
+                    </span>
+
+                </p>
+
+            </div>
+
+            <div style="
+                margin-top:25px;
+                padding:15px;
+                background:#eef4ff;
+                border-radius:10px;
+            ">
+
+                <strong>
+                    📱 Event Day
+                </strong>
+
+                <p>
+                    Show this QR code at the event
+                    entrance. The volunteer will scan
+                    it to verify your participation.
+                </p>
+
+            </div>
+
+            <br>
+
+            <button
+                onclick="window.print()"
+                class="btn-primary">
+
+                🖨️ Print / Save Event Pass
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

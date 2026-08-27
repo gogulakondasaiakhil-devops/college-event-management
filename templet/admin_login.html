@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | College Event Management</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+
+        body{
+            margin:0;
+            padding:0;
+            font-family:Arial,Helvetica,sans-serif;
+            background:linear-gradient(135deg,#1e3c72,#2a5298);
+            height:100vh;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+        }
+
+        .login-container{
+
+            width:400px;
+
+            background:white;
+
+            border-radius:15px;
+
+            padding:35px;
+
+            box-shadow:0 10px 30px rgba(0,0,0,.3);
+
+        }
+
+        h2{
+
+            text-align:center;
+
+            color:#1e3c72;
+
+            margin-bottom:10px;
+
+        }
+
+        p{
+
+            text-align:center;
+
+            color:gray;
+
+            margin-bottom:30px;
+
+        }
+
+        input{
+
+            width:100%;
+
+            padding:12px;
+
+            margin:10px 0;
+
+            border-radius:8px;
+
+            border:1px solid #ccc;
+
+            font-size:15px;
+
+        }
+
+        button{
+
+            width:100%;
+
+            padding:12px;
+
+            background:#1e3c72;
+
+            color:white;
+
+            border:none;
+
+            border-radius:8px;
+
+            cursor:pointer;
+
+            font-size:16px;
+
+        }
+
+        button:hover{
+
+            background:#16315f;
+
+        }
+
+        .back{
+
+            margin-top:20px;
+
+            text-align:center;
+
+        }
+
+        .back a{
+
+            text-decoration:none;
+
+            color:#1e3c72;
+
+            font-weight:bold;
+
+        }
+
+        .error{
+
+            color:red;
+
+            text-align:center;
+
+            margin-bottom:10px;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="login-container">
+
+    <h2>Administrator Login</h2>
+
+    <p>College Event Management System</p>
+
+    {% if error %}
+    <div class="error">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <form action="/admin-login" method="POST">
+
+        <input
+            type="text"
+            name="username"
+            placeholder="Username"
+            required>
+
+        <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            required>
+
+        <button type="submit">
+            Login
+        </button>
+
+    </form>
+
+    <div class="back">
+
+        <a href="{{ url_for('index') }}">
+            ← Back to Student Login
+        </a>
+
+    </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

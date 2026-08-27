@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Event Management Portal</title>
+    <!-- Google Font Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- SITE HEADER / NAVBAR -->
+    <header class="site-header">
+        <nav class="navbar">
+            <a href="{{ url_for('index') }}" class="logo">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <span>CampusEvents</span>
+            </a>
+            
+            <div class="hamburger" onclick="toggleNav()">
+                <i class="fa-solid fa-bars"></i>
+            </div>
+
+            <ul class="nav-links" id="navLinks">
+                <li><a href="{{ url_for('index') }}" class="active"><i class="fa-solid fa-house"></i> Home</a></li>
+                <li><a href="{{ url_for('dashboard') }}"><i class="fa-solid fa-calendar-days"></i> Events</a></li>
+                <li><a href="#about"><i class="fa-solid fa-circle-info"></i> About</a></li>
+                <li><a href="#contact"><i class="fa-solid fa-envelope"></i> Contact</a></li>
+                <li><a href="{{ url_for('admin_login') }}" class="nav-btn-admin"><i class="fa-solid fa-user-shield"></i> Admin Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-tag">
+                <i class="fa-solid fa-bolt"></i> Official Campus Events Portal
+            </div>
+            <h1>Discover, Participate & Experience <span>Campus Life</span></h1>
+            <p>Join hackathons, cultural festivals, technical workshops, and sports tournaments. Register for events seamlessly with real-time updates.</p>
+            <div class="hero-buttons">
+                <a href="{{ url_for('dashboard') }}" class="btn-primary">
+                    <i class="fa-solid fa-compass"></i> Explore Events
+                </a>
+                <a href="{{ url_for('admin_login') }}" class="btn-secondary">
+                    <i class="fa-solid fa-lock"></i> Admin Login
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- STUDENT VERIFICATION / QUICK ACCESS BOX -->
+    <div class="verification-wrapper">
+        <div class="login-box animate-fade-in">
+            <h2><i class="fa-solid fa-id-card"></i> Student Access Portal</h2>
+            <div class="form-group-custom">
+                <label>Hall Ticket Number</label>
+                <div class="input-with-icon">
+                    <i class="fa-solid fa-ticket"></i>
+                    <input type="text" id="hallTicket" placeholder="e.g. 210101001">
+                </div>
+            </div>
+
+            <div class="form-group-custom">
+                <label>Mobile Number</label>
+                <div class="input-with-icon">
+                    <i class="fa-solid fa-phone"></i>
+                    <input type="tel" id="mobile" placeholder="e.g. 9876543210">
+                </div>
+            </div>
+
+            <div class="form-group-custom">
+                <label>Gmail Address</label>
+                <div class="input-with-icon">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="email" id="email" placeholder="student@college.edu">
+                </div>
+            </div>
+
+            <button class="btn-primary btn-full" onclick="sendOTP()">
+                <i class="fa-solid fa-paper-plane"></i> Send Verification Code
+            </button>
+
+            <div id="otpSection" style="display:none; margin-top: 20px;">
+                <div class="form-group-custom">
+                    <label>Enter Verification Code (OTP)</label>
+                    <div class="input-with-icon">
+                        <i class="fa-solid fa-key"></i>
+                        <input type="text" id="otpInput" placeholder="Enter 6-digit OTP">
+                    </div>
+                </div>
+                <button class="btn-primary btn-full" onclick="login()">
+                    <i class="fa-solid fa-circle-check"></i> Verify & Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ABOUT SECTION -->
+    <section id="about" class="container">
+        <div class="section-title">
+            <h2>Why Join College Events?</h2>
+            <p>Empowering students to innovate, collaborate, and excel through diverse opportunities.</p>
+        </div>
+        <div class="events-grid">
+            <div class="card" style="padding: 30px; text-align: center;">
+                <div style="font-size: 2.5rem; color: var(--primary); margin-bottom: 15px;">
+                    <i class="fa-solid fa-code"></i>
+                </div>
+                <h3 style="margin-bottom: 10px;">Technical Fest & Hackathons</h3>
+                <p style="color: var(--text-muted);">Compete in coding battles, robotics challenges, and present research papers to top domain experts.</p>
+            </div>
+            <div class="card" style="padding: 30px; text-align: center;">
+                <div style="font-size: 2.5rem; color: #ec4899; margin-bottom: 15px;">
+                    <i class="fa-solid fa-music"></i>
+                </div>
+                <h3 style="margin-bottom: 10px;">Cultural Celebrations</h3>
+                <p style="color: var(--text-muted);">Unleash your artistic talent in music, dance, drama, and photography contests across campus.</p>
+            </div>
+            <div class="card" style="padding: 30px; text-align: center;">
+                <div style="font-size: 2.5rem; color: #10b981; margin-bottom: 15px;">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+                <h3 style="margin-bottom: 10px;">Sports & Athletics</h3>
+                <p style="color: var(--text-muted);">Participate in annual sports meets, cricket, football, basketball, and indoor championships.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer id="contact" class="site-footer">
+        <div class="footer-container">
+            <div class="footer-col">
+                <h3><i class="fa-solid fa-graduation-cap"></i> College Events Portal</h3>
+                <p>Official centralized platform for event registrations, announcements, and student participation management.</p>
+                <div class="social-icons">
+                    <a href="#" class="social-icon"><i class="fa-brands fa-facebook-f"></i></a>
+                    <a href="#" class="social-icon"><i class="fa-brands fa-twitter"></i></a>
+                    <a href="#" class="social-icon"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" class="social-icon"><i class="fa-brands fa-linkedin-in"></i></a>
+                </div>
+            </div>
+
+            <div class="footer-col">
+                <h3>Quick Links</h3>
+                <ul class="footer-links">
+                    <li><a href="{{ url_for('index') }}"><i class="fa-solid fa-chevron-right"></i> Home</a></li>
+                    <li><a href="{{ url_for('dashboard') }}"><i class="fa-solid fa-chevron-right"></i> All Events</a></li>
+                    <li><a href="{{ url_for('admin_login') }}"><i class="fa-solid fa-chevron-right"></i> Admin Login</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h3>Contact Info</h3>
+                <ul class="footer-links">
+                    <li><a href="#"><i class="fa-solid fa-location-dot"></i> College Campus, Student Activity Block</a></li>
+                    <li><a href="mailto:events@college.edu"><i class="fa-solid fa-envelope"></i> events@college.edu</a></li>
+                    <li><a href="tel:+919876543210"><i class="fa-solid fa-phone"></i> +91 98765 43210</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            &copy; 2026 College Event Management System. All Rights Reserved.
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        function toggleNav() {
+            var nav = document.getElementById('navLinks');
+            nav.classList.toggle('show');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+.env
+eventapp_backup.sql
+
+__pycache__/
+*.pyc
+
+static/payments/*
+static/qrcodes/*
