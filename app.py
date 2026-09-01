@@ -37,6 +37,28 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # ==========================
+# Error Handlers
+# ==========================
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    original_error = getattr(e, 'original_exception', e)
+    return f"""
+    <div style="font-family: sans-serif; padding: 40px; text-align: center; max-width: 650px; margin: 50px auto; border: 1px solid #fee2e2; border-radius: 12px; background: #fff5f5;">
+        <h2 style="color: #dc2626;">⚠️ Database Connection / Server Error</h2>
+        <p style="color: #4b5563;">The application was unable to connect to the MySQL database.</p>
+        <div style="background: #1e293b; color: #f8fafc; padding: 15px; border-radius: 8px; font-family: monospace; text-align: left; overflow-x: auto; font-size: 0.85rem;">
+            {original_error}
+        </div>
+        <p style="margin-top: 20px; font-size: 0.9rem; color: #4b5563; text-align: left;">
+            <strong>Why did this happen?</strong><br>
+            On Vercel, <code>DB_HOST=localhost</code> will not work because MySQL is not running on Vercel's serverless container.
+            You must connect to a remote cloud MySQL database (such as Aiven, Supabase, Railway, PlanetScale, or AWS RDS) and set <code>DB_HOST</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code>, and <code>DB_NAME</code> in Vercel Environment Variables.
+        </p>
+    </div>
+    """, 500
+
+# ==========================
 # Database Connection
 # ==========================
 
