@@ -4,7 +4,7 @@
 
 function sendOTP() {
 
-    const emailInput = document.getElementById("studentEmail");
+    const emailInput = document.getElementById("studentEmail") || document.getElementById("email");
     const message = document.getElementById("otpMessage");
 
     if (!emailInput) {
@@ -15,69 +15,57 @@ function sendOTP() {
     const email = emailInput.value.trim();
 
     if (email === "") {
-
-        message.style.color = "red";
-        message.innerText = "Please enter your email address.";
-
+        if (message) {
+            message.style.color = "red";
+            message.innerText = "Please enter your email address.";
+        } else {
+            alert("Please enter your email address.");
+        }
         return;
     }
 
-    message.style.color = "#2563eb";
-    message.innerText = "Sending OTP...";
+    if (message) {
+        message.style.color = "#2563eb";
+        message.innerText = "Sending OTP...";
+    }
 
     fetch("/send-otp", {
-
         method: "POST",
-
         headers: {
             "Content-Type": "application/x-www-form-urlencoded"
         },
-
         body: "email=" + encodeURIComponent(email)
-
     })
-
     .then(response => {
-
         if (!response.ok) {
             throw new Error("Server error: " + response.status);
         }
-
         return response.json();
-
     })
-
     .then(data => {
-
         console.log("OTP response:", data);
-
         if (data.status === "success") {
-
-            message.style.color = "green";
-
-            message.innerText =
-                "OTP sent successfully to " + email;
-
+            if (message) {
+                message.style.color = "green";
+                message.innerText = "OTP sent successfully to " + email;
+            }
+            const otpSection = document.getElementById("otpSection");
+            if (otpSection) {
+                otpSection.style.display = "block";
+            }
         } else {
-
-            message.style.color = "red";
-
-            message.innerText =
-                data.message || "Unable to send OTP.";
-
+            if (message) {
+                message.style.color = "red";
+                message.innerText = data.message || "Unable to send OTP.";
+            }
         }
-
     })
-
     .catch(error => {
-
         console.error("OTP Error:", error);
-
-        message.style.color = "red";
-
-        message.innerText =
-            "Unable to send OTP. Check the Flask terminal.";
-
+        if (message) {
+            message.style.color = "red";
+            message.innerText = "Unable to send OTP. Check the Flask terminal.";
+        }
     });
 }
 
@@ -85,20 +73,31 @@ function sendOTP() {
 // ==========================================
 // VERIFY OTP
 // ==========================================
-function verifyOTP() {
+function verifyOTP(isRedirectOnSuccess = false) {
 
-    const otp = document.getElementById("otp").value.trim();
+    const otpElem = document.getElementById("otp") || document.getElementById("otpInput");
     const message = document.getElementById("otpMessage");
     const registerButton = document.getElementById("registerButton");
 
-    if (otp === "") {
-        message.style.color = "red";
-        message.innerText = "Please enter the OTP.";
+    if (!otpElem) {
+        console.error("OTP input not found");
         return;
     }
 
-    message.style.color = "#2563eb";
-    message.innerText = "Verifying OTP...";
+    const otp = otpElem.value.trim();
+
+    if (otp === "") {
+        if (message) {
+            message.style.color = "red";
+            message.innerText = "Please enter the OTP.";
+        }
+        return;
+    }
+
+    if (message) {
+        message.style.color = "#2563eb";
+        message.innerText = "Verifying OTP...";
+    }
 
     fetch("/verify-otp", {
         method: "POST",
@@ -109,29 +108,38 @@ function verifyOTP() {
     })
     .then(response => response.json())
     .then(data => {
-
         if (data.status === "verified") {
-
-            message.style.color = "green";
-            message.innerText = "✓ OTP verified successfully.";
-
-            registerButton.disabled = false;
-
+            if (message) {
+                message.style.color = "green";
+                message.innerText = "✓ OTP verified successfully.";
+            }
+            if (registerButton) {
+                registerButton.disabled = false;
+            }
+            if (isRedirectOnSuccess) {
+                setTimeout(() => {
+                    window.location.href = "/dashboard.html";
+                }, 1000);
+            }
         } else {
-
-            message.style.color = "red";
-            message.innerText = "✗ Invalid OTP.";
-
-            registerButton.disabled = true;
+            if (message) {
+                message.style.color = "red";
+                message.innerText = "✗ Invalid OTP.";
+            }
+            if (registerButton) {
+                registerButton.disabled = true;
+            }
         }
-
     })
     .catch(error => {
-
         console.error(error);
-
-        message.style.color = "red";
-        message.innerText = "Unable to verify OTP.";
-
+        if (message) {
+            message.style.color = "red";
+            message.innerText = "Unable to verify OTP.";
+        }
     });
+}
+
+function login() {
+    verifyOTP(true);
 }

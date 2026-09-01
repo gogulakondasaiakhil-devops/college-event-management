@@ -80,13 +80,15 @@
                 <label>Gmail Address</label>
                 <div class="input-with-icon">
                     <i class="fa-solid fa-envelope"></i>
-                    <input type="email" id="email" placeholder="student@college.edu">
+                    <input type="email" id="studentEmail" placeholder="student@college.edu">
                 </div>
             </div>
 
             <button class="btn-primary btn-full" onclick="sendOTP()">
                 <i class="fa-solid fa-paper-plane"></i> Send Verification Code
             </button>
+
+            <p id="otpMessage" style="margin-top: 10px; font-weight: 600; text-align: center;"></p>
 
             <div id="otpSection" style="display:none; margin-top: 20px;">
                 <div class="form-group-custom">

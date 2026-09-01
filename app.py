@@ -456,6 +456,9 @@ def admin():
     cursor.execute("SELECT COUNT(*) AS pending_registrations FROM registrations WHERE payment_status = 'Pending'")
     pending_registrations = cursor.fetchone()["pending_registrations"] or 0
 
+    cursor.execute("SELECT COUNT(*) AS rejected_registrations FROM registrations WHERE payment_status = 'Rejected'")
+    rejected_registrations = cursor.fetchone()["rejected_registrations"] or 0
+
     cursor.execute("""
         SELECT
             SUM(events.fee) AS total_revenue,
@@ -484,6 +487,7 @@ def admin():
         todays_events=todays_events,
         paid_registrations=paid_registrations,
         pending_registrations=pending_registrations,
+        rejected_registrations=rejected_registrations,
         total_revenue=total_revenue,
         collected_revenue=collected_revenue,
         pending_revenue=pending_revenue,
@@ -708,6 +712,8 @@ College Event Management System
         conn.close()
 
         return f"Error approving payment: {e}"
+
+@app.route("/reject-payment/<int:registration_id>")
 def reject_payment(registration_id):
     if "admin" not in session:
         return redirect(url_for("admin_login"))
@@ -999,9 +1005,6 @@ def db_status():
     except Exception as e:
         return f"❌ Error : {e}"
 
-if __name__ == "__main__":
-    app.run(debug=True)
-
 @app.route("/event-pass/<pass_token>")
 def event_pass(pass_token):
 
@@ -1055,3 +1058,6 @@ def event_pass(pass_token):
         "event_pass.html",
         registration=registration
     )
+
+if __name__ == "__main__":
+    app.run(debug=True)
