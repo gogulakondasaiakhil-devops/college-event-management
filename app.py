@@ -267,16 +267,17 @@ def register(event_id):
             filename = secure_filename(payment_file.filename)
 
             payment_folder = os.path.join(
-                app.static_folder,
+                app.static_folder or "static",
                 "payments"
             )
 
-            if not os.path.exists(payment_folder):
-                os.makedirs(payment_folder)
-
-            payment_file.save(
-                os.path.join(payment_folder, filename)
-            )
+            try:
+                os.makedirs(payment_folder, exist_ok=True)
+                payment_file.save(
+                    os.path.join(payment_folder, filename)
+                )
+            except Exception as e:
+                print("Payment proof save warning:", e)
 
         # ==========================
         # FIND / CREATE STUDENT
@@ -579,45 +580,29 @@ def mark_paid(registration_id):
         print("STEP 3: Creating QR")
 
         qr_folder = os.path.join(
-            app.static_folder,
+            app.static_folder or "static",
             "qrcodes"
         )
 
-        os.makedirs(
-            qr_folder,
-            exist_ok=True
-        )
+        try:
+            os.makedirs(qr_folder, exist_ok=True)
+            qr_filename = f"{participant_code}.png"
+            qr_path = os.path.join(qr_folder, qr_filename)
 
-        qr_filename = f"{participant_code}.png"
-
-        qr_path = os.path.join(
-            qr_folder,
-            qr_filename
-        )
-
-
-        # ==========================================
-        # GENERATE QR
-        # ==========================================
-
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_M,
-            box_size=10,
-            border=4
-        )
-
-        qr.add_data(participant_code)
-
-        qr.make(
-            fit=True
-        )
-
-        qr_image = qr.make_image()
-
-        qr_image.save(qr_path)
-
-        print("STEP 3 SUCCESS:", qr_path)
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_M,
+                box_size=10,
+                border=4
+            )
+            qr.add_data(participant_code)
+            qr.make(fit=True)
+            qr_image = qr.make_image()
+            qr_image.save(qr_path)
+            print("STEP 3 SUCCESS:", qr_path)
+        except Exception as e:
+            qr_filename = f"{participant_code}.png"
+            print("QR code generation warning:", e)
 
 
         # ==========================================
