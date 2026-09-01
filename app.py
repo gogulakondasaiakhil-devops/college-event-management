@@ -2,6 +2,7 @@ from flask_mail import Mail, Message
 import random
 from flask import Flask, render_template, request, redirect, url_for, session, send_file
 import mysql.connector
+import sqlite3
 from werkzeug.utils import secure_filename
 import os
 import io
@@ -59,16 +60,133 @@ def internal_server_error(e):
     """, 500
 
 # ==========================
-# Database Connection
+# Database Connection & Fallback
 # ==========================
 
+class DictCursor:
+    def __init__(self, cursor, is_sqlite=False):
+        self.cursor = cursor
+        self.is_sqlite = is_sqlite
+
+    def execute(self, query, params=()):
+        if self.is_sqlite:
+            query = query.replace("%s", "?")
+            query = query.replace("CURDATE()", "CURRENT_DATE")
+            query = query.replace("GREATEST(", "MAX(")
+        if params:
+            self.cursor.execute(query, params)
+        else:
+            self.cursor.execute(query)
+
+    def fetchone(self):
+        row = self.cursor.fetchone()
+        if row is None:
+            return None
+        if isinstance(row, dict):
+            return row
+        if self.is_sqlite:
+            cols = [d[0] for d in self.cursor.description]
+            return dict(zip(cols, row))
+        return row
+
+    def fetchall(self):
+        rows = self.cursor.fetchall()
+        if not rows:
+            return []
+        if isinstance(rows[0], dict):
+            return rows
+        if self.is_sqlite:
+            cols = [d[0] for d in self.cursor.description]
+            return [dict(zip(cols, r)) for r in rows]
+        return rows
+
+    @property
+    def lastrowid(self):
+        return self.cursor.lastrowid
+
+    def close(self):
+        self.cursor.close()
+
+def init_sqlite_db(conn):
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS admin (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS events (
+            event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_name TEXT NOT NULL,
+            event_date TEXT NOT NULL,
+            venue TEXT,
+            fee REAL,
+            description TEXT,
+            participants INTEGER DEFAULT 0,
+            event_image TEXT
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS students (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            hall_ticket TEXT UNIQUE NOT NULL,
+            student_name TEXT NOT NULL,
+            mobile TEXT NOT NULL,
+            email TEXT NOT NULL
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS registrations (
+            registration_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id INTEGER NOT NULL,
+            event_id INTEGER NOT NULL,
+            payment_status TEXT DEFAULT 'Pending',
+            payment_proof TEXT,
+            participant_code TEXT UNIQUE,
+            qr_code TEXT,
+            pass_token TEXT UNIQUE
+        )
+    """)
+    cur.execute("SELECT COUNT(*) FROM admin")
+    if cur.fetchone()[0] == 0:
+        cur.execute("INSERT INTO admin (username, password) VALUES ('admin', 'admin123')")
+
+    cur.execute("SELECT COUNT(*) FROM events")
+    if cur.fetchone()[0] == 0:
+        sample_events = [
+            ("TechXplore 2026", "2026-09-15", "Main Auditorium", 200.0, "Annual Technical Fest featuring Coding Battles, Hackathons & Robotics.", 0, "event1.jpg"),
+            ("Cultural Fiesta", "2026-09-20", "Open Air Theatre", 150.0, "Celebration of Music, Dance, Drama and Art competitions across campus.", 0, "event2.jpg"),
+            ("Sports Arena '26", "2026-10-05", "College Stadium", 100.0, "Inter-college cricket, football, basketball and athletics tournament.", 0, "event3.jpg")
+        ]
+        cur.executemany("""
+            INSERT INTO events (event_name, event_date, venue, fee, description, participants, event_image)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, sample_events)
+    conn.commit()
+
+def get_db():
+    db_host = os.getenv("DB_HOST", "localhost")
+    try:
+        conn = mysql.connector.connect(
+            host=db_host,
+            user=os.getenv("DB_USER", "root"),
+            password=os.getenv("DB_PASSWORD", ""),
+            database=os.getenv("DB_NAME", "eventapp"),
+            connect_timeout=3
+        )
+        return conn, DictCursor(conn.cursor(dictionary=True), is_sqlite=False), False
+    except Exception:
+        db_dir = "/tmp" if (os.getenv("VERCEL") or not os.access(".", os.W_OK)) else "."
+        db_path = os.path.join(db_dir, "college.db")
+        conn = sqlite3.connect(db_path)
+        init_sqlite_db(conn)
+        return conn, DictCursor(conn.cursor(), is_sqlite=True), True
+
 def get_connection():
-    return mysql.connector.connect(
-        host=os.getenv("DB_HOST"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_NAME")
-    )    
+    conn, _, _ = get_db()
+    return conn    
 
 def fetch_filtered_registrations(cursor, search="", event_id="", payment_status="", event_date="", sort_by="", sort_order="ASC"):
     query = """
@@ -140,8 +258,7 @@ def index():
 
 @app.route("/dashboard.html")
 def dashboard():
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn, cursor, _ = get_db()
     cursor.execute("SELECT * FROM events ORDER BY event_date")
     events = cursor.fetchall()
     cursor.close()
@@ -150,8 +267,7 @@ def dashboard():
 
 @app.route("/event/<int:event_id>")
 def event(event_id):
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn, cursor, _ = get_db()
     cursor.execute("SELECT * FROM events WHERE event_id=%s", (event_id,))
     event_item = cursor.fetchone()
     cursor.close()
@@ -235,8 +351,7 @@ def verify_otp():
 @app.route("/register/<int:event_id>", methods=["GET", "POST"])
 def register(event_id):
 
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn, cursor, _ = get_db()
 
     cursor.execute(
         "SELECT * FROM events WHERE event_id=%s",
@@ -449,8 +564,7 @@ def admin():
     if "admin" not in session:
         return redirect(url_for("admin_login"))
 
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn, cursor, _ = get_db()
 
     search = request.args.get("search", "").strip()
     event_id = request.args.get("event_id", "").strip()
@@ -530,8 +644,7 @@ def mark_paid(registration_id):
     if "admin" not in session:
         return redirect(url_for("admin_login"))
 
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn, cursor, _ = get_db()
 
     try:
 
@@ -724,8 +837,7 @@ College Event Management System
 def reject_payment(registration_id):
     if "admin" not in session:
         return redirect(url_for("admin_login"))
-    conn = get_connection()
-    cursor = conn.cursor()
+    conn, cursor, _ = get_db()
     cursor.execute("UPDATE registrations SET payment_status = 'Rejected' WHERE registration_id = %s", (registration_id,))
     conn.commit()
     cursor.close()
@@ -736,13 +848,12 @@ def reject_payment(registration_id):
 def delete_registration(registration_id):
     if "admin" not in session:
         return redirect(url_for("admin_login"))
-    conn = get_connection()
-    cursor = conn.cursor()
+    conn, cursor, _ = get_db()
 
     cursor.execute("SELECT event_id FROM registrations WHERE registration_id = %s", (registration_id,))
     reg = cursor.fetchone()
     if reg:
-        event_id = reg[0]
+        event_id = reg["event_id"] if isinstance(reg, dict) else reg[0]
         cursor.execute("UPDATE events SET participants = GREATEST(0, participants - 1) WHERE event_id = %s", (event_id,))
 
     cursor.execute("DELETE FROM registrations WHERE registration_id = %s", (registration_id,))
@@ -759,8 +870,7 @@ def bulk_action():
     reg_ids = request.form.getlist("registration_ids")
 
     if reg_ids:
-        conn = get_connection()
-        cursor = conn.cursor()
+        conn, cursor, _ = get_db()
         format_strings = ','.join(['%s'] * len(reg_ids))
         if action == "mark_paid":
             cursor.execute(f"UPDATE registrations SET payment_status = 'Paid' WHERE registration_id IN ({format_strings})", tuple(reg_ids))
@@ -769,7 +879,8 @@ def bulk_action():
                 cursor.execute("SELECT event_id FROM registrations WHERE registration_id = %s", (rid,))
                 row = cursor.fetchone()
                 if row:
-                    cursor.execute("UPDATE events SET participants = GREATEST(0, participants - 1) WHERE event_id = %s", (row[0],))
+                    event_id = row["event_id"] if isinstance(row, dict) else row[0]
+                    cursor.execute("UPDATE events SET participants = GREATEST(0, participants - 1) WHERE event_id = %s", (event_id,))
             cursor.execute(f"DELETE FROM registrations WHERE registration_id IN ({format_strings})", tuple(reg_ids))
         conn.commit()
         cursor.close()
@@ -781,8 +892,7 @@ def export_excel():
     if "admin" not in session:
         return redirect(url_for("admin_login"))
 
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn, cursor, _ = get_db()
     search = request.args.get("search", "").strip()
     event_id = request.args.get("event_id", "").strip()
     payment_status = request.args.get("payment_status", "").strip()
@@ -824,8 +934,7 @@ def export_pdf():
     if "admin" not in session:
         return redirect(url_for("admin_login"))
 
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn, cursor, _ = get_db()
     search = request.args.get("search", "").strip()
     event_id = request.args.get("event_id", "").strip()
     payment_status = request.args.get("payment_status", "").strip()
@@ -888,8 +997,7 @@ def add_event():
     description = request.form["description"]
 
     # Duplicate Event Detection Check
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn, cursor, _ = get_db()
     cursor.execute("SELECT * FROM events WHERE event_name = %s AND event_date = %s", (event_name, event_date))
     existing = cursor.fetchone()
     if existing:
@@ -899,7 +1007,10 @@ def add_event():
 
     events_folder = os.path.join("static", "events")
     if not os.path.exists(events_folder):
-        os.makedirs(events_folder)
+        try:
+            os.makedirs(events_folder, exist_ok=True)
+        except OSError:
+            pass
 
     filename = None
     if "event_image" in request.files:
@@ -910,7 +1021,10 @@ def add_event():
                 conn.close()
                 return "Invalid image format. Only JPG, JPEG, and PNG files are allowed."
             filename = secure_filename(image.filename)
-            image.save(os.path.join("static", "events", filename))
+            try:
+                image.save(os.path.join("static", "events", filename))
+            except Exception:
+                pass
 
     cursor.execute("""
         INSERT INTO events (event_name, event_date, venue, fee, description, event_image, participants)
@@ -926,8 +1040,7 @@ def add_event():
 def edit_event(event_id):
     if "admin" not in session:
         return redirect(url_for("admin_login"))
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn, cursor, _ = get_db()
 
     if request.method == "POST":
         event_name = request.form["event_name"]
@@ -957,8 +1070,7 @@ def edit_event(event_id):
 def delete_event(event_id):
     if "admin" not in session:
         return redirect(url_for("admin_login"))
-    conn = get_connection()
-    cursor = conn.cursor()
+    conn, cursor, _ = get_db()
     cursor.execute("DELETE FROM events WHERE event_id=%s", (event_id,))
     conn.commit()
     cursor.close()
@@ -971,8 +1083,7 @@ def admin_login():
         username = request.form["username"].strip()
         password = request.form["password"].strip()
 
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
+        conn, cursor, _ = get_db()
 
         cursor.execute(
             "SELECT * FROM admin WHERE username=%s",
@@ -994,6 +1105,7 @@ def admin_login():
         )
 
     return render_template("admin_login.html")
+
 @app.route("/logout")
 def logout():
     session.pop("admin", None)
@@ -1002,21 +1114,24 @@ def logout():
 @app.route("/db-status")
 def db_status():
     try:
-        conn = get_connection()
-        cursor = conn.cursor()
+        conn, cursor, is_sqlite = get_db()
+        if is_sqlite:
+            cursor.close()
+            conn.close()
+            return "✅ Connected Successfully to Database : SQLite (Auto-Fallback Mode)"
         cursor.execute("SELECT DATABASE();")
         db = cursor.fetchone()
         cursor.close()
         conn.close()
-        return f"✅ Connected Successfully to Database : {db[0]}"
+        db_name = db["DATABASE()"] if isinstance(db, dict) else db[0]
+        return f"✅ Connected Successfully to Database : MySQL ({db_name})"
     except Exception as e:
         return f"❌ Error : {e}"
 
 @app.route("/event-pass/<pass_token>")
 def event_pass(pass_token):
 
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn, cursor, _ = get_db()
 
     cursor.execute("""
         SELECT
