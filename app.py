@@ -24,7 +24,7 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = os.getenv("MAIL_USERNAME")
 app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD")
 mail = Mail(app)
-app.secret_key = os.getenv("SECRET_KEY")
+app.secret_key = os.getenv("SECRET_KEY") or secrets.token_hex(32)
 
 # ==========================
 # MySQL Configuration
@@ -272,6 +272,8 @@ def event(event_id):
     event_item = cursor.fetchone()
     cursor.close()
     conn.close()
+    if event_item is None:
+        return "Event not found.", 404
     return render_template("event.html", event=event_item)
 
 @app.route("/send-otp", methods=["POST"])
@@ -359,6 +361,11 @@ def register(event_id):
     )
 
     event_item = cursor.fetchone()
+
+    if event_item is None:
+        cursor.close()
+        conn.close()
+        return "Event not found.", 404
 
     if request.method == "POST":
 
@@ -1064,6 +1071,8 @@ def edit_event(event_id):
     event_item = cursor.fetchone()
     cursor.close()
     conn.close()
+    if event_item is None:
+        return "Event not found.", 404
     return render_template("edit_event.html", event=event_item)
 
 @app.route("/delete-event/<int:event_id>")
